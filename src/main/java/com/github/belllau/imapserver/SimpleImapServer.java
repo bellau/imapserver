@@ -1,5 +1,9 @@
 package com.github.belllau.imapserver;
 
+import com.github.bellau.rockyproto.MessageStoreGrpc;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -19,6 +23,7 @@ public class SimpleImapServer {
 
 		@Override
 		public void initChannel(SocketChannel ch) throws Exception {
+			ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", 50051).usePlaintext(true).build();
 
 			ChannelPipeline pipeline = ch.pipeline();
 
@@ -26,7 +31,7 @@ public class SimpleImapServer {
 			pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
 			pipeline.addLast(new ImapCommandDecoder());
 			pipeline.addLast(new ImapResponseEncoder());
-			pipeline.addLast(new ImapCommandHandler());
+			pipeline.addLast(new ImapCommandHandler(MessageStoreGrpc.newStub(channel)));
 			ch.write(new ImapResponse.Ok(null, null, "IMAP4rev1 server ready"));
 		}
 	}
@@ -38,6 +43,7 @@ public class SimpleImapServer {
 	}
 
 	public void start() throws Exception {
+
 		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 		try {
@@ -53,6 +59,6 @@ public class SimpleImapServer {
 	}
 
 	public static void main(String[] args) throws Exception {
-		new SimpleImapServer(143).start();
+		new SimpleImapServer(1143).start();
 	}
 }
